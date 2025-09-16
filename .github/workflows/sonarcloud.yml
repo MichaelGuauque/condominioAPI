@@ -1,0 +1,48 @@
+name: SonarCloud analysis
+
+on:
+  push:
+    branches: [ "development" ]
+  pull_request:
+    branches: [ "development" ]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read # allows SonarCloud to decorate PRs with analysis results
+
+jobs:
+  Analysis:
+    runs-on: ubuntu-latest
+
+    env:
+      DB_HOST_CONDOMINIO: ${{ secrets.DB_HOST_CONDOMINIO }}
+      DB_NAME_CONDOMINIO: ${{ secrets.DB_NAME_CONDOMINIO }}
+      USER_DB_CONDOMINIO: ${{ secrets.USER_DB_CONDOMINIO }}
+      PASSWORD_DB_CONDOMINIO: ${{ secrets.PASSWORD_DB }}
+      
+    services:
+      mysql:
+        image: mysql:8
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.PASSWORD_DB_CONDOMINIO }}
+          MYSQL_DATABASE: ${{ secrets.DB_NAME_CONDOMINIO }}
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Analyze with SonarCloud
+
+        # You can pin the exact commit or the version.
+        # uses: SonarSource/sonarcloud-github-action@v2.2.0
+        uses: SonarSource/sonarcloud-github-action@4006f663ecaf1f8093e8e4abb9227f6041f52216
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+        with:
+          args:
+            -Dsonar.projectKey=
+            -Dsonar.organization=
+          projectBaseDir: .
