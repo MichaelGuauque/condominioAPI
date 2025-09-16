@@ -46,5 +46,6 @@ jobs:
             -Dsonar.projectKey=${{ secrets.PROJECT_KEY }}
             -Dsonar.organization=${{ secrets.ORGANIZATION_KEY }}
             -Dsonar.sources=src/main/java
-            -Dsonar.tests=src/test/java
             -Dsonar.java.binaries=target/classes
+          #  -Dsonar.tests=src/test/java
+            
