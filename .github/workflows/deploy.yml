@@ -1,0 +1,104 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: condominio-api
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build with Maven
+        run: ./mvnw clean package -DskipTests
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_TAG=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          docker build -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
+
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "/home/ec2-user/condominio-app/"
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/condominio-app
+            
+            echo "🚀 Iniciando despliegue..."
+            
+            # Parar contenedores actuales
+            echo "⏹️  Parando aplicación..."
+            docker-compose down 2>/dev/null || true
+            
+            # Limpiar imágenes viejas
+            echo "🧹 Limpiando imágenes viejas..."
+            docker image prune -a -f
+            
+            # Login a GHCR
+            echo "🔐 Login a GHCR..."
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Configurar variables de entorno y ejecutar
+            echo "⬇️  Descargando e iniciando nueva versión..."
+            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }} \
+            DB_HOST_CONDOMINIO="${{ secrets.DB_HOST_CONDOMINIO }}" \
+            DB_NAME_CONDOMINIO="${{ secrets.DB_NAME_CONDOMINIO }}" \
+            USER_DB_CONDOMINIO="${{ secrets.USER_DB_CONDOMINIO }}" \
+            PASSWORD_DB_CONDOMINIO="${{ secrets.PASSWORD_DB_CONDOMINIO }}" \
+            docker-compose pull && \
+            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }} \
+            DB_HOST_CONDOMINIO="${{ secrets.DB_HOST_CONDOMINIO }}" \
+            DB_NAME_CONDOMINIO="${{ secrets.DB_NAME_CONDOMINIO }}" \
+            USER_DB_CONDOMINIO="${{ secrets.USER_DB_CONDOMINIO }}" \
+            PASSWORD_DB_CONDOMINIO="${{ secrets.PASSWORD_DB_CONDOMINIO }}" \
+            docker-compose up -d
+            
+            # Verificar
+            echo "⏳ Verificando despliegue..."
+            sleep 15
+            
+            echo "📊 Estado:"
+            docker-compose ps
+            
+            echo "📋 Logs:"
+            docker-compose logs --tail=20
+            
+            echo "💾 Espacio disponible:"
+            df -h /
+            
+            echo "✅ Despliegue completado!"
