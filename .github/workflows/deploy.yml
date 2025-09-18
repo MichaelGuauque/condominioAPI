@@ -38,7 +38,9 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          IMAGE_TAG=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG=${{ env.REGISTRY }}/${REPO_OWNER}/${{ env.IMAGE_NAME }}:latest
+          echo "Building image: $IMAGE_TAG"
           docker build -t $IMAGE_TAG .
           docker push $IMAGE_TAG
 
@@ -76,13 +78,13 @@ jobs:
             
             # Configurar variables de entorno y ejecutar
             echo "⬇️  Descargando e iniciando nueva versión..."
-            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }} \
+            GITHUB_REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]') \
             DB_HOST_CONDOMINIO="${{ secrets.DB_HOST_CONDOMINIO }}" \
             DB_NAME_CONDOMINIO="${{ secrets.DB_NAME_CONDOMINIO }}" \
             USER_DB_CONDOMINIO="${{ secrets.USER_DB_CONDOMINIO }}" \
             PASSWORD_DB_CONDOMINIO="${{ secrets.PASSWORD_DB_CONDOMINIO }}" \
             docker-compose pull && \
-            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }} \
+            GITHUB_REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]') \
             DB_HOST_CONDOMINIO="${{ secrets.DB_HOST_CONDOMINIO }}" \
             DB_NAME_CONDOMINIO="${{ secrets.DB_NAME_CONDOMINIO }}" \
             USER_DB_CONDOMINIO="${{ secrets.USER_DB_CONDOMINIO }}" \
