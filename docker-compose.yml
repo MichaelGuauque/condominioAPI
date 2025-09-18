@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  condominio-api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/condominio-api:latest
+    container_name: condominio-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST_CONDOMINIO=${DB_HOST_CONDOMINIO}
+      - DB_NAME_CONDOMINIO=${DB_NAME_CONDOMINIO}
+      - USER_DB_CONDOMINIO=${USER_DB_CONDOMINIO}
+      - PASSWORD_DB_CONDOMINIO=${PASSWORD_DB_CONDOMINIO}
+      - SPRING_PROFILES_ACTIVE=prod
+
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 200M
