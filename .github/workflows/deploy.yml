@@ -51,7 +51,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker-compose.yml"
-          target: "/home/ec2-user/condominio-app/"
+          target: "/home/${{ secrets.EC2_USER }}/condominio-app/"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -60,7 +60,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ec2-user/condominio-app
+            cd /home/${{ secrets.EC2_USER }}/condominio-app
             
             echo "🚀 Iniciando despliegue..."
             
