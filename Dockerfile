@@ -1,8 +1,7 @@
-# Usar imagen base con OpenJDK 21
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre-alpine
 
-# Instalar curl para health checks y eliminar el cache
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Instalar curl para health checks
+RUN apk add --no-cache curl
 
 # Crear directorio de trabajo
 WORKDIR /app
@@ -13,8 +12,8 @@ COPY target/*.jar app.jar
 # Exponer puerto
 EXPOSE 8080
 
-# Configuración JVM optimizada para t2.micro (máximo 400MB heap)
-ENV JAVA_OPTS="-Xmx400m -Xms200m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+# Configuración JVM optimizada
+ENV JAVA_OPTS="-Xmx350m -Xms128m -XX:+UseSerialGC -XX:MaxMetaspaceSize=64m"
 
 # Comando de inicio simple
 ENTRYPOINT java $JAVA_OPTS -jar app.jar
